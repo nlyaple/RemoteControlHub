@@ -1,0 +1,97 @@
+<!doctype html>
+<html>
+<head>
+    <meta http-equiv="Content-Type">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Nelsony Remote Control Hub</title>
+    <link rel="stylesheet" href="style.min.css">    
+	<style>
+	    html {font-family: Arial; display: inline-block; text-align: center;}
+        p {font-size: large;}
+        body {font-size: large; color: white; max-width: 480px; margin:0px auto; padding-bottom: 25px;}
+	</style>
+</head>
+
+<body style="background:black">
+  <h1>Nelsony</h1>
+  <h2>Remote Control Hub</h2>
+  <h3>Delete Device</h3>
+<div>
+    <label for="RemDevice">Device List: </label>
+    <form id="RemDevice" >
+        <select id="devList" form="RemDevice" class="mySelect">
+			<option value="0">Select device below to remove:</option>		
+        </select>
+		<br><br>
+		<input type="button" value="Delete" onclick="deviceRemFunc();">
+    </form>
+</div>  
+	<br><br>
+      <button id="cancel" onclick="window.open('settings.html', '_self');" >Cancel</button>    
+      <button id="addDone" onclick="window.open('settings.html', '_self');" >Done removing devices</button>    
+
+
+
+<script>
+var w = window.innerWidth;
+var h = window.innerHeight;
+if ((w < 480) || (h < 480))
+{
+    console.log("Browser window is too small");
+}
+
+function deviceRemFunc() {
+    var selectBox = document.getElementById("devList");
+    device = selectBox.options[selectBox.selectedIndex].text;
+	console.log("Selected text: ", device);
+    deviceVal = selectBox.options[selectBox.selectedIndex].value;
+    selectBox.remove(selectBox.selectedIndex);
+	console.log("Selected value: ", deviceVal);
+	fetch('http://%IPADDRESS%/devrem', {   
+		method: "POST",
+		headers: {
+			"x-api-key": "69c45815-ca2e-45e5-a2ea-e07aafb37595",
+		},
+		body: device,
+	})
+	.then(response => {
+		console.log(response); 
+    })
+    .catch((err) => {
+		console.log(err);
+	});
+}
+
+let list = document.getElementById("devList");
+    
+
+fetch('http://%IPADDRESS%/deviceList', 
+{
+    method: "GET",
+    headers: {
+        "x-api-key": "69c45815-ca2e-45e5-a2ea-e07aafb37595"
+    }
+})
+.then((response) => {
+    response.json().then((jsonResponse) => {
+        console.log(jsonResponse); 
+        Object.entries(jsonResponse).forEach(([key, value]) => {
+//			list.options[list.options.length] = new Option(value, '0', false, false);
+			
+            let option_elem = document.createElement("option");
+			console.log("Setting option: ", key);
+            option_elem.value = key;
+            option_elem.innerText = key;
+            list.appendChild(option_elem);
+            list.size++;
+        })
+    })
+})
+.catch((err) => {
+	console.log(err);
+	list.options[list.options.length] = new Option("No devices found", '0', false, false);
+});
+
+</script>
+</body>
+</html>

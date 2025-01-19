@@ -1,0 +1,144 @@
+<!doctype html>
+<html>
+<head>
+    <meta http-equiv="Content-Type">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Nelsony Remote Control Hub</title>
+    <link rel="stylesheet" href="style.min.css">    
+	<style>
+	    html {font-family: Arial; display: inline-block; text-align: center;}
+        p {font-size: large;}
+        body {font-size: large;}
+	</style>
+</head>
+
+<body  style="background:black">
+  <h1>Nelsony</h1>
+  <h2>Remote Controller</h2>
+  <h3>Device Activation</h3>
+   
+    <button id="settings" style="background-color:transparent; border-color:transparent;"> 
+    <img src= "settings-icon.png" onclick="window.open('settings.html', '_self');" height="35"></button>    
+
+<div class="container">
+</div>  
+
+</body>
+
+
+<script>
+
+const remoteTypes = {"1":["Up","Stop","Down"], 
+ 					 "2":["Open", "Stop", "Close"],
+					 "3":["Open", "Stop", "Close", "Qtr", "Half", "Third"],
+ 					 "4":["Speed 1", "Speed 2", "Speed 3", "Speed 4", "Speed 5", "Speed 6", "Stop", "Direction", "Light On", "Light Off" ],
+                     "5":["Up", "Stop", "Down", "Tilt Up", "Stop Tilt", "Tilt Down"],
+					 };
+
+var w = window.innerWidth;
+var h = window.innerHeight;
+if ((w < 480) || (h < 480))
+{
+    console.log("Browser window is too small");
+}
+
+
+function deviceActionFunc(id) {
+    var device = id + "~";
+	console.log("Selected id: ", id);
+    var selection = document.getElementById(id);
+    var ele = selection.getElementsByTagName('input');
+    for(i = 0; i < ele.length; i++) {
+        if (ele[i].type="radio") {
+            if (ele[i].checked)
+            {
+                device += ele[i].value;
+                break;
+            }
+        }
+    }	
+	
+	console.log("Selected: ", device);
+	fetch('http://%IPADDRESS%/devaction', {   
+		method: "POST",
+		headers: {
+			"x-api-key": "69c45815-ca2e-45e5-a2ea-e07aafb37595",
+		},
+		body: device,
+	})
+	.then(response => {
+		console.log(response); 
+    })
+    .catch((err) => {
+		console.log(err);
+	});
+}
+
+   
+
+fetch('http://%IPADDRESS%/deviceList', 
+{
+    method: "GET",
+    headers: {
+        "x-api-key": "69c45815-ca2e-45e5-a2ea-e07aafb37595"
+    }
+})
+.then((response) => {
+    console.log(response); 
+    response.json().then((jsonResponse) => {
+        console.log(jsonResponse); 
+        Object.entries(jsonResponse).forEach(([key, value]) => {
+            createRemote(key, value);
+        })
+    })
+})
+.catch((err) => {
+	console.log(err);
+});
+
+
+function createRemote(devName, rmType) {
+	// Create a break line element
+	var br = document.createElement("br");
+               
+    // Create a form dynamically
+    var form = document.createElement("form");
+    form.setAttribute("method", "post");
+    form.setAttribute("class", "rmbtns");
+    form.setAttribute("id", devName);
+    form.setAttribute("action", "/devaction");
+    form.setAttribute("onchange","deviceActionFunc(id)"); 
+    var FORMLBL = document.createElement("label");
+    FORMLBL.setAttribute("for", devName);
+    FORMLBL.innerHTML = devName;
+    
+    var FIELDSET = document.createElement("fieldset");
+    FIELDSET.appendChild(FORMLBL);
+    FIELDSET.appendChild(br.cloneNode());
+    
+    for (let i = 0; i < remoteTypes[rmType].length; i++) {
+    	// Create an input element for Radio Button
+    	var BTN = document.createElement("input");
+    	BTN.setAttribute("type", "radio");
+    	BTN.setAttribute("id", remoteTypes[rmType][i]);
+    	BTN.setAttribute("name", rmType);
+    	BTN.setAttribute("value", remoteTypes[rmType][i]);
+    	var BTNLBL = document.createElement("label");
+    	BTNLBL.setAttribute("for", remoteTypes[rmType][i]);
+    	BTNLBL.innerHTML = remoteTypes[rmType][i];
+                 
+    	// Append the Button to the form
+    	FIELDSET.appendChild(BTN);
+    	FIELDSET.appendChild(BTNLBL);
+    	// Inserting a line break
+    	FIELDSET.appendChild(br.cloneNode());
+	}                 
+
+    form.appendChild(FIELDSET);
+     
+    document.getElementsByTagName("div")[0]
+   .appendChild(form);
+}
+
+</script>
+</html>

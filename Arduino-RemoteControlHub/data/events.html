@@ -1,0 +1,260 @@
+<!doctype html>
+<html>
+<head>
+    <meta http-equiv="Content-Type">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Nelsony Remote Control Hub</title>
+    <link rel="stylesheet" href="style.min.css">    
+	<style>
+	    html {font-family: Arial; display: inline-block; text-align: center;}
+        p {font-size: large;}
+        body {font-size: large;}
+	</style>
+</head>
+
+<body  style="background:black">
+  <h1>Nelsony</h1>
+  <h2>Remote Controller</h2>
+  <h3>Timed Events Setup</h3>
+   
+    <button id="settings" style="background-color:transparent; border-color:transparent;"> 
+    <img src= "settings-icon.png" onclick="window.open('settings.html', '_self');" height="35"></button>    
+
+    <button id="event1" name="0" onclick="setupEventSched(this.name);" >Event 1</button>    
+    <button id="event2" name="1" onclick="setupEventSched(this.name);">Event 2</button>    
+    <button id="event3" name="2" onclick="setupEventSched(this.name);">Event 3</button>    
+    <button id="event4" name="3" onclick="setupEventSched(this.name);">Event 4</button>    
+
+	<br><br>
+	<label for="eventTime">Set the event time: </label>
+	<input type="time" id="eventTime" value="12:00">
+	<br><br>
+
+<div id="main" class="container">
+</div>  
+
+	<br><br>
+    <button id="cancel" onclick="window.open('settings.html', '_self');" >Cancel</button>    
+    <button id="eventDone" onclick="saveEvent();">Submit</button>    
+
+
+</body>
+
+
+<script>
+
+const remoteTypes = {"1":["Up","Stop","Down"], 
+                     "2":["Open", "Stop", "Close"],
+                     "3":["Open", "Stop", "Close", "Qtr", "Half", "Third"],
+   					 "4":["Speed 1", "Speed 2", "Speed 3", "Speed 4", "Speed 5", "Speed 6", "Stop", "Direction", "Light On", "Light Off"]
+                    };
+
+var w = window.innerWidth;
+var h = window.innerHeight;
+if ((w < 480) || (h < 480))
+{
+    console.log("Browser window is too small");
+}
+
+// Build all the remote devices to choose from.
+function buildRemotes()
+{
+	fetch('http://%IPADDRESS%/deviceList', 
+	{
+    	method: "GET",
+    	headers: {
+        	"x-api-key": "69c45815-ca2e-45e5-a2ea-e07aafb37595"
+    	}
+	})
+	.then((response) => {
+    	console.log(response); 
+    	response.json().then((jsonResponse) => {
+        	console.log(jsonResponse); 
+        	Object.entries(jsonResponse).forEach(([key, value]) => {
+            	createRemote(key, value);
+        	})
+    	})
+	})
+    .catch((err) => {
+		console.log(err);
+	});
+}
+
+
+
+var selectedEvent = -1;
+
+function setupEventSched(id) {
+	console.log("Event id: ", id);
+	selectedEvent = id;
+	document.getElementById("main").innerHTML = "";	
+	buildRemotes();	
+	const task = async () => {
+		await new Promise(r => setTimeout(r, 250));
+	}
+	getEventData(id);
+}
+
+
+function getEventData(eventNum) {
+	fetch('http://%IPADDRESS%/getevent?event=' + eventNum, 
+	{
+    	method: "GET",
+    	headers: {
+        	"x-api-key": "69c45815-ca2e-45e5-a2ea-e07aafb37595"
+    	}
+	})
+	.then((response) => {
+    	console.log(response); 
+    	response.json().then((jsonResponse) => {
+        	console.log("JSON Response: ",jsonResponse);
+        	eventTime = jsonResponse["time"];
+	    	var timeSet = document.getElementById("eventTime");
+			timeSet.value = eventTime;
+        	events = jsonResponse["events"]; 
+ 
+        	Object.entries(jsonResponse["events"]).forEach(([key, value]) => {
+             	console.log("Key: ", key);
+             	console.log("Value: ", value);
+				var device = value.slice(0, value.indexOf("~"));
+				var action =  value.slice(value.indexOf("~")+1);
+				console.log("device: ", device);
+				console.log("action: ", action);
+
+    			var selection = document.getElementById(device);
+    			var ele = selection.getElementsByTagName('input');
+    			for(x = 0; x < ele.length; x++) {
+        			if (ele[x].type="radio") {
+        				//console.log("Button: ", ele[x].value)
+            			if (ele[x].value == action)
+            			{
+	                		ele[x].checked = true;
+    	        		}
+        			}
+    			}
+        	})
+    	})
+    })
+    .catch((err) => {
+		console.log(err);
+	});
+}
+
+
+function createRemote(devName, rmType) {
+	// Create a break line element
+	var br = document.createElement("br");
+               
+    // Create a form dynamically
+    var form = document.createElement("form");
+    form.setAttribute("method", "post");
+    form.setAttribute("class", "rmbtns");
+    form.setAttribute("id", devName);
+    form.setAttribute("action", "/devaction");
+    var FORMLBL = document.createElement("label");
+    FORMLBL.setAttribute("for", devName);
+    FORMLBL.setAttribute("id", "Label");
+    FORMLBL.innerHTML = devName;
+    
+    var FIELDSET = document.createElement("fieldset");
+    FIELDSET.setAttribute("id", "fieldSet");
+    FIELDSET.appendChild(FORMLBL);
+    FIELDSET.appendChild(br.cloneNode());
+    
+    for (let i = 0; i < remoteTypes[rmType].length; i++) {
+    	// Create an input element for Radio Button
+    	var BTN = document.createElement("input");
+    	BTN.setAttribute("type", "radio");
+    	BTN.setAttribute("id", remoteTypes[rmType][i]);
+    	BTN.setAttribute("name", rmType);
+    	BTN.setAttribute("value", remoteTypes[rmType][i]);
+    	var BTNLBL = document.createElement("label");
+    	BTNLBL.setAttribute("for", remoteTypes[rmType][i]);
+	    BTNLBL.setAttribute("id", "BTNLabel");
+    	BTNLBL.innerHTML = remoteTypes[rmType][i];
+                 
+    	// Append the Button to the form
+    	FIELDSET.appendChild(BTN);
+    	FIELDSET.appendChild(BTNLBL);
+    	// Inserting a line break
+    	FIELDSET.appendChild(br.cloneNode());
+	}                 
+
+    form.appendChild(FIELDSET);
+     
+    document.getElementsByTagName("div")[0]
+   .appendChild(form);
+}
+
+function saveEvent() {
+	console.log("saveEvent, saving event: ", selectedEvent);
+    var timeSet = document.getElementById("eventTime");
+	eventTime = timeSet.value;
+	var events = [];
+	
+	var divMain = document.getElementById("main");
+	if (divMain) {
+		var divElem = divMain.firstChild;
+		while (divElem) {
+			//console.log("Found a divElem: ", divElem.id);
+			var divSubElem = divElem.firstChild;
+			if (divSubElem) {
+				while (divSubElem) {
+					if (divSubElem.type == "fieldset") {
+						//console.log("found divSubElem: ", divSubElem.id);	
+						var elemBtn = divSubElem.firstChild;
+						if (elemBtn) {
+							while (elemBtn) {
+								if (elemBtn.type == "radio") {
+									//console.log("found elemBtn id: ", elemBtn.id);
+									if (elemBtn.checked) {
+										var eventName = divElem.id + '~' + elemBtn.id;
+										console.log("Button is checked: ", eventName);
+										events.push(eventName);
+									}
+								}
+								elemBtn = elemBtn.nextSibling;
+							}
+						}
+					}
+					divSubElem = divSubElem.nextSibling;	
+				}
+			}
+			divElem = divElem.nextSibling;
+		}
+	} else {
+		console.log("divMain not found");
+	}
+	JSONBody = JSON.stringify({
+			"eventNum": selectedEvent,
+			"time": eventTime,
+			"events": events,
+		});
+	console.log("Json body: ", JSONBody);
+
+	fetch('http://%IPADDRESS%/setevent', {   
+		method: "POST",
+		headers: {
+			"x-api-key": "69c45815-ca2e-45e5-a2ea-e07aafb37595",
+		},
+		body: JSON.stringify({
+			"eventNum": selectedEvent,
+			"time": eventTime,
+			"events": events,
+		})
+	})
+	.then(response => {
+		console.log(response); 
+    })
+    .catch((err) => {
+		console.log(err);
+	});
+	document.getElementById("main").innerHTML = "";	
+    var timeSet = document.getElementById("eventTime");
+	timeSet.value = "00:00";
+	
+//	window.open('settings.html');	
+}
+
+</script>
+</html>

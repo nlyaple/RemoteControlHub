@@ -1,0 +1,14 @@
+{
+  "domain": "nyhub",
+  "name": "Hub",
+  "version": "1.0.0",
+  "config_flow": true,
+  "documentation": "https://www.home-assistant.io/integrations/nelsony",
+  "requirements": [],
+  "dependencies": [],
+  "zeroconf": ["_hub._tcp.local."],
+  "codeowners": ["@nlyaple"],
+  "quality_scale": "",
+  "iot_class": "local_polling",
+  "loggers": []
+}
